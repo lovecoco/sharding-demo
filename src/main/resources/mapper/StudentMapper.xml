@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.qq.shardingsphere.mapper.StudentMapper">
+
+
+    <select id="selectUserById" parameterType="java.util.List" resultType="com.qq.shardingsphere.vo.StudentVO">
+        select s.*, a.city
+        from tbl_student s
+                 inner join tbl_student_city a on s.id = a.user_Id
+        where s.id in
+        <foreach collection="userIds" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+
+    </select>
+
+
+</mapper>

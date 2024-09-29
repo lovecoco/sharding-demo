@@ -1,0 +1,120 @@
+spring:
+#  datasource:
+#    url: jdbc:mysql://localhost:3306/sharding_dev?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Hongkong&allowMultiQueries=true
+#    username: sharding_user
+#    password: sharding!@#
+#    type: com.alibaba.druid.pool.DruidDataSource
+#    driver-class-name: com.mysql.jdbc.Driver
+  devtools:
+    livereload:
+      enabled: true
+    restart:
+      additional-paths: src/main/java,src/main/resources
+  shardingsphere:    #https://shardingsphere.apache.org/document/5.2.0/cn/user-manual/shardingsphere-jdbc/spring-boot-starter/rules/readwrite-splitting/
+    mode:
+      type: Standalone
+      repository:
+        type: JDBC
+    datasource:
+      names: s0,s1
+      s0:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/s0?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Hongkong&allowMultiQueries=true
+        username: sharding_user
+        password: sharding!@#
+      s1:
+        type: com.alibaba.druid.pool.DruidDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/s1?useUnicode=true&characterEncoding=UTF-8&zeroDateTimeBehavior=convertToNull&serverTimezone=Hongkong&allowMultiQueries=true
+        username: sharding_user
+        password: sharding!@#
+
+    rules:
+      sharding:
+        tables:   #多个表分开配置
+          tbl_student:
+            actual-data-nodes: s$->{0..1}.tbl_student_$->{0..1}
+            database-strategy:
+              standard:
+                sharding-column: id
+                sharding-algorithm-name: sharding_db_stu
+            table-strategy:
+              standard:
+                sharding-column: id
+                sharding-algorithm-name: sharding_tbl_stu
+            key-generate-strategy:
+              column: id
+              key-generator-name: stu_snowflake
+          tbl_student_city:
+            actual-data-nodes: s$->{0..1}.tbl_student_city_$->{0..1}
+            database-strategy:
+              standard:
+                sharding-column: user_id
+                sharding-algorithm-name: sharding_db_stu_city
+            table-strategy:
+              standard:
+                sharding-column: user_id
+                sharding-algorithm-name: sharding_tbl_stu_city
+            key-generate-strategy:
+              column: id
+              key-generator-name: stu_city_snowflake
+          tbl_city:
+            actual-data-nodes: s$->{0..1}.tbl_city
+        broadcast-tables:  #广播表配置
+          - tbl_city
+        sharding-algorithms:  #分片算法配置
+          sharding_db_stu:
+            type: CLASS_BASED
+            props:
+              strategy: standard
+              algorithmClass‐Name: com.qq.shardingsphere.config.MyDBShardingAlgorithms
+          sharding_tbl_stu:
+            type: HASH_MOD
+            props:
+              sharding-count: 2
+          sharding_db_stu_city:
+            type: CLASS_BASED
+            props:
+              strategy: standard
+              algorithmClass‐Name: com.qq.shardingsphere.config.MyDBShardingAlgorithms
+          sharding_tbl_stu_city:
+            type: HASH_MOD
+            props:
+              sharding-count: 2
+        key-generators:  ##主键生成配置
+          stu_city_snowflake:
+            type: SNOWFLAKE
+          stu_snowflake:
+            type: SNOWFLAKE
+        binding-tables:
+          - tbl_student,tbl_student_city
+      encrypt:    #数据库的字段密文存储，查询解密
+        tables:
+          tbl_student:
+            columns:
+              student_name:
+                cipher-column: student_name
+                encryptor-name: name_encode
+        encryptors:
+          name_encode:
+            type: AES
+            props:
+              aes-key-value: 11223344
+      sql-parser:   #sql解析
+        sql-comment-parse-enabled: true
+        sql-statement-cache:
+          initial-capacity: 2000
+          maximum-size: 65535
+        parse-tree-cache:
+          initial-capacity: 128
+          maximum-size: 1024
+    props:  #全局配置
+      sql-show: true
+      query-with-cipher-column: true
+    database:
+      name: logic_s
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
